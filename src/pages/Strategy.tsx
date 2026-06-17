@@ -5,6 +5,7 @@ import { Panel } from "@/components/ui/Panel";
 import { Tag } from "@/components/ui/Bits";
 import { StrategyForm } from "@/components/strategy/StrategyForm";
 import { StrategyPreview } from "@/components/strategy/StrategyPreview";
+import { StrategySandbox } from "@/components/strategy/StrategySandbox";
 import { formatDuration } from "@/lib/meta";
 import { cn } from "@/lib/utils";
 
@@ -14,7 +15,7 @@ export default function Strategy() {
   const selected = strategies.find((s) => s.areaId === selectedId) ?? strategies[0];
 
   return (
-    <div className="grid grid-cols-[260px_minmax(0,1fr)_320px] gap-5">
+    <div className="grid grid-cols-[260px_minmax(0,1fr)_340px] gap-5">
       <Panel title="区域列表" icon={<SlidersHorizontal className="h-4 w-4" />} bodyClass="p-2">
         <div className="space-y-1.5">
           {strategies.map((s) => {
@@ -70,13 +71,14 @@ export default function Strategy() {
         {selected && <StrategyForm strategy={selected} />}
       </Panel>
 
-      <Panel
-        title="生效预览"
-        icon={<Activity className="h-4 w-4" />}
-        bodyClass="p-3"
-      >
-        {selected && <StrategyPreview strategy={selected} />}
-      </Panel>
+      <div className="space-y-5">
+        <Panel title="时间沙盘" icon={<Activity className="h-4 w-4" />} bodyClass="p-3">
+          <StrategySandbox />
+        </Panel>
+        <Panel title="当前生效预览" bodyClass="p-3">
+          {selected && <StrategyPreview strategy={selected} />}
+        </Panel>
+      </div>
     </div>
   );
 }

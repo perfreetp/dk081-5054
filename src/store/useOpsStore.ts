@@ -64,11 +64,16 @@ function isHoliday(dateStr: string): boolean {
 
 export type EffectiveRuleType = "holiday" | "night" | "peak" | "base";
 
-export function effectiveRule(strategy: AreaStrategy, now: Date): { type: EffectiveRuleType; threshold: number } {
+export function effectiveRule(
+  strategy: AreaStrategy,
+  now: Date,
+  opts: { forceHoliday?: boolean } = {},
+): { type: EffectiveRuleType; threshold: number } {
   const h = now.getHours();
   const m = now.getMinutes();
   const t = h + m / 60;
-  if (strategy.holidayRule.enabled && isHoliday("2026-06-17")) {
+  const isHol = opts.forceHoliday ?? isHoliday("2026-06-17");
+  if (strategy.holidayRule.enabled && isHol) {
     return { type: "holiday", threshold: strategy.holidayRule.thresholdSec };
   }
   if (strategy.nightRule.enabled) {
@@ -85,8 +90,12 @@ export function effectiveRule(strategy: AreaStrategy, now: Date): { type: Effect
   return { type: "base", threshold: strategy.thresholdSec };
 }
 
-export function effectiveThreshold(strategy: AreaStrategy, now: Date): number {
-  return effectiveRule(strategy, now).threshold;
+export function effectiveThreshold(
+  strategy: AreaStrategy,
+  now: Date,
+  opts: { forceHoliday?: boolean } = {},
+): number {
+  return effectiveRule(strategy, now, opts).threshold;
 }
 
 function reevaluateLevel(durationSec: number, thresholdSec: number): AlertLevel {
@@ -234,6 +243,7 @@ export interface OpsState {
   updateStrategy: (areaId: string, patch: Partial<AreaStrategy>) => void;
   toggleLinkage: (areaId: string, type: LinkageType) => void;
   signHandover: (name: string) => void;
+  refreshHandover: () => void;
   tick: () => void;
   addAlert: (seed?: (typeof ALERT_SEEDS)[number]) => void;
   reevaluateFromStrategy: (areaId: string) => void;
@@ -426,6 +436,14 @@ export const useOpsStore = create<OpsState>((set, get) => ({
       : [...state.handover.signedBy, name];
     set({
       handover: { ...recomputeHandover(state.alerts, formatClock(now), signedBy), signedBy },
+    });
+  },
+
+  refreshHandover: () => {
+    const state = get();
+    const now = new Date();
+    set({
+      handover: recomputeHandover(state.alerts, formatClock(now), state.handover.signedBy),
     });
   },
 

@@ -3,14 +3,16 @@ import { Camera, Clock, Users } from "lucide-react";
 import type { Area } from "@/types";
 import { AREA_STATUS_META, formatDuration } from "@/lib/meta";
 import { cn } from "@/lib/utils";
-import { useOpsStore } from "@/store/useOpsStore";
+import { effectiveThreshold, useOpsStore } from "@/store/useOpsStore";
 import { StatusDot, Tag } from "@/components/ui/Bits";
 
 export function AreaCard({ area }: { area: Area }) {
   const navigate = useNavigate();
   const selectAlert = useOpsStore((s) => s.selectAlert);
   const strategies = useOpsStore((s) => s.strategies);
-  const threshold = strategies.find((s) => s.areaId === area.id)?.thresholdSec ?? 300;
+  const strat = strategies.find((s) => s.areaId === area.id);
+  const now = new Date();
+  const threshold = strat ? effectiveThreshold(strat, now) : 300;
   const meta = AREA_STATUS_META[area.status];
   const pct = Math.min(100, Math.round((area.maxDurationSec / threshold) * 100));
   const isCritical = area.status === "critical";
