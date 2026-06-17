@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { DoorClosed, Filter, Phone, Radio } from "lucide-react";
+import { DoorClosed, ExternalLink, Filter, Phone, Radio } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useOpsStore } from "@/store/useOpsStore";
 import { Panel } from "@/components/ui/Panel";
 import { EmptyState, Tag } from "@/components/ui/Bits";
@@ -21,6 +22,8 @@ const RESULT_META: Record<string, { label: string; text: string; bg: string }> =
 
 export default function Linkage() {
   const linkages = useOpsStore((s) => s.linkages);
+  const selectAlert = useOpsStore((s) => s.selectAlert);
+  const navigate = useNavigate();
   const [filter, setFilter] = useState<LinkageType | "all">("all");
 
   const counts = {
@@ -44,6 +47,11 @@ export default function Linkage() {
     { key: "broadcast", label: "广播", icon: Radio },
     { key: "intercom", label: "对讲", icon: Phone },
   ];
+
+  const goSource = (alertId: string) => {
+    selectAlert(alertId);
+    navigate("/alerts");
+  };
 
   return (
     <div className="grid grid-cols-[260px_minmax(0,1fr)] gap-5">
@@ -110,9 +118,14 @@ export default function Linkage() {
                         <span className={cn("rounded px-1.5 py-0.5 text-[10px]", res.bg, res.text)}>
                           {res.label}
                         </span>
-                        <span className="font-mono text-[10px] text-ink-mute">
+                        <button
+                          onClick={() => goSource(l.sourceAlertId)}
+                          className="flex items-center gap-1 rounded border border-amber/30 bg-amber/5 px-1.5 py-0.5 font-mono text-[10px] text-amber transition-colors hover:bg-amber/15"
+                          title="跳转到来源告警"
+                        >
+                          <ExternalLink className="h-2.5 w-2.5" />
                           来源 {l.sourceAlertId}
-                        </span>
+                        </button>
                       </div>
                     </div>
                   </div>

@@ -21,8 +21,9 @@ import type {
   LinkageType,
   Personnel,
   Shift,
+  TimelineEntry,
 } from "@/types";
-import { LEVEL_RANK, formatClock } from "@/lib/meta";
+import { CLEARANCE_META, LEVEL_RANK, formatClock } from "@/lib/meta";
 
 let alertSeq = INITIAL_ALERTS.length;
 let linkageSeq = LINKAGES.length;
@@ -30,6 +31,10 @@ let linkageSeq = LINKAGES.length;
 function genLinkageId() {
   linkageSeq += 1;
   return `LK-2026-${String(118 + linkageSeq).padStart(3, "0")}`;
+}
+
+function pushTimeline(alert: Alert, entry: Omit<TimelineEntry, "at">, clock: string): TimelineEntry[] {
+  return [...(alert.timeline ?? []), { at: `2026-06-17 ${clock.slice(0, 5)}`, ...entry }];
 }
 
 function nearestPatrol(area: Area, patrol: Personnel[]): Personnel | undefined {
@@ -57,27 +62,31 @@ function isHoliday(dateStr: string): boolean {
   return w === 0 || w === 6;
 }
 
-function effectiveThreshold(strategy: AreaStrategy, now: Date): number {
+export type EffectiveRuleType = "holiday" | "night" | "peak" | "base";
+
+export function effectiveRule(strategy: AreaStrategy, now: Date): { type: EffectiveRuleType; threshold: number } {
   const h = now.getHours();
   const m = now.getMinutes();
   const t = h + m / 60;
   if (strategy.holidayRule.enabled && isHoliday("2026-06-17")) {
-    return strategy.holidayRule.thresholdSec;
+    return { type: "holiday", threshold: strategy.holidayRule.thresholdSec };
   }
   if (strategy.nightRule.enabled) {
-    const ns = strategy.nightRule.start;
-    const ne = strategy.nightRule.end;
-    const nsh = Number(ns.slice(0, 2)) + Number(ns.slice(3)) / 60;
-    const neh = Number(ne.slice(0, 2)) + Number(ne.slice(3)) / 60;
+    const nsh = Number(strategy.nightRule.start.slice(0, 2)) + Number(strategy.nightRule.start.slice(3)) / 60;
+    const neh = Number(strategy.nightRule.end.slice(0, 2)) + Number(strategy.nightRule.end.slice(3)) / 60;
     const inNight = nsh < neh ? t >= nsh && t < neh : t >= nsh || t < neh;
-    if (inNight) return strategy.nightRule.thresholdSec;
+    if (inNight) return { type: "night", threshold: strategy.nightRule.thresholdSec };
   }
   for (const p of strategy.peakHours) {
     const ps = Number(p.start.slice(0, 2)) + Number(p.start.slice(3)) / 60;
     const pe = Number(p.end.slice(0, 2)) + Number(p.end.slice(3)) / 60;
-    if (t >= ps && t < pe) return p.patientWaitToleranceSec;
+    if (t >= ps && t < pe) return { type: "peak", threshold: p.patientWaitToleranceSec };
   }
-  return strategy.thresholdSec;
+  return { type: "base", threshold: strategy.thresholdSec };
+}
+
+export function effectiveThreshold(strategy: AreaStrategy, now: Date): number {
+  return effectiveRule(strategy, now).threshold;
 }
 
 function reevaluateLevel(durationSec: number, thresholdSec: number): AlertLevel {
@@ -125,17 +134,20 @@ function buildLinkageFor(
   return out;
 }
 
-function recomputeAreas(alerts: Alert[]): Area[] {
+function recomputeAreas(alerts: Alert[], strategies: AreaStrategy[], now: Date): Area[] {
   return AREAS.map((area) => {
     const areaAlerts = alerts.filter(
       (a) => a.areaId === area.id && a.status !== "closed" && a.status !== "falseAlarm",
     );
+    const strat = strategies.find((s) => s.areaId === area.id);
+    const threshold = strat ? effectiveThreshold(strat, now) : 300;
     const maxDur = areaAlerts.reduce((m, a) => Math.max(m, a.durationSec), 0);
     const active = areaAlerts.length;
-    const status =
-      maxDur > 600 || active >= 3
+    const maxRatio = threshold ? maxDur / threshold : 0;
+    const status: Area["status"] =
+      maxRatio >= 1.6 || active >= 3
         ? "critical"
-        : maxDur > 360 || active >= 1
+        : maxRatio >= 1 || active >= 1
           ? "warning"
           : "normal";
     return { ...area, maxDurationSec: maxDur, currentLoitering: active, status };
@@ -144,6 +156,7 @@ function recomputeAreas(alerts: Alert[]): Area[] {
 
 function recomputeHandover(alerts: Alert[], clock: string, existingSignedBy: string[] = [] ): HandoverChecklist {
   const closed = alerts.filter((a) => a.status === "closed");
+  const newAlerts = alerts.filter((a) => a.triggeredAt.startsWith("2026-06-17")).length;
   const pendingItems = alerts
     .filter((a) => a.status !== "closed" && a.status !== "falseAlarm")
     .map((a) => {
@@ -171,6 +184,7 @@ function recomputeHandover(alerts: Alert[], clock: string, existingSignedBy: str
   }
 
   const slotCounts: Record<string, { slot: string; area: string; count: number }> = {};
+  const areaCounts: Record<string, { area: string; count: number }> = {};
   for (const a of alerts) {
     if (a.status === "falseAlarm") continue;
     const hh = Number(a.triggeredAt.slice(11, 13));
@@ -178,18 +192,25 @@ function recomputeHandover(alerts: Alert[], clock: string, existingSignedBy: str
     const key = `${slot}@${a.areaName}`;
     if (!slotCounts[key]) slotCounts[key] = { slot, area: a.areaName, count: 0 };
     slotCounts[key].count += 1;
+    if (!areaCounts[a.areaName]) areaCounts[a.areaName] = { area: a.areaName, count: 0 };
+    areaCounts[a.areaName].count += 1;
   }
   const slots = Object.values(slotCounts)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3);
+  const focusAreas = Object.values(areaCounts)
     .sort((a, b) => b.count - a.count)
     .slice(0, 3);
 
   return {
     shiftId: "S-2026-06-17-D",
     generatedAt: `2026-06-17 ${clock.slice(0, 5)}`,
+    newAlerts,
     handledAlerts: closed.length,
     pendingItems,
     focusPersons: persons.slice(0, 3),
     focusSlots: slots,
+    focusAreas,
     signedBy: existingSignedBy,
   };
 }
@@ -242,13 +263,32 @@ export const useOpsStore = create<OpsState>((set, get) => ({
       if (mark === "escalate" && area && strat) {
         newLinkages = buildLinkageFor(alert, area, strat, ["access", "broadcast", "intercom"], state.clock);
       }
+      const now = new Date();
       const alerts: Alert[] = state.alerts.map((a) => {
         if (a.id !== id) return a;
-        if (mark === "false") return { ...a, mark, status: "falseAlarm" as const };
-        if (mark === "watch") return { ...a, mark, status: "watch" as const };
-        return { ...a, mark, level: "critical" as const, status: "pending" as const };
+        if (mark === "false")
+          return {
+            ...a,
+            mark,
+            status: "falseAlarm" as const,
+            timeline: pushTimeline(a, { action: "标记误报", tone: "mute" }, state.clock),
+          };
+        if (mark === "watch")
+          return {
+            ...a,
+            mark,
+            status: "watch" as const,
+            timeline: pushTimeline(a, { action: "标记关注", tone: "focus" }, state.clock),
+          };
+        return {
+          ...a,
+          mark,
+          level: "critical" as const,
+          status: "pending" as const,
+          timeline: pushTimeline(a, { action: "升级处置·高风险", tone: "crit" }, state.clock),
+        };
       });
-      const areas = recomputeAreas(alerts);
+      const areas = recomputeAreas(alerts, state.strategies, now);
       const handover = recomputeHandover(alerts, state.clock, state.handover.signedBy);
       return {
         alerts,
@@ -273,6 +313,7 @@ export const useOpsStore = create<OpsState>((set, get) => ({
           guardPost: guard.post,
         })
       : [];
+    const now = new Date();
     const alerts: Alert[] = state.alerts.map((a) =>
       a.id === id
         ? {
@@ -281,10 +322,11 @@ export const useOpsStore = create<OpsState>((set, get) => ({
             handlerId: guard.id,
             handlerName: guard.name,
             level: "critical" as const,
+            timeline: pushTimeline(a, { action: `分派${guard.name}前往处置`, tone: "amber", by: guard.name }, state.clock),
           }
         : a,
     );
-    const areas = recomputeAreas(alerts);
+    const areas = recomputeAreas(alerts, state.strategies, now);
     const handover = recomputeHandover(alerts, state.clock, state.handover.signedBy);
     set({
       alerts,
@@ -299,10 +341,24 @@ export const useOpsStore = create<OpsState>((set, get) => ({
     set((state) => {
       const alert = state.alerts.find((a) => a.id === id);
       const handlerId = alert?.handlerId;
+      const handlerName = alert?.handlerName;
+      const now = new Date();
       const alerts: Alert[] = state.alerts.map((a) =>
-        a.id === id ? { ...a, status: "closed" as const, arrivalSec, clearanceResult: result } : a,
+        a.id === id
+          ? {
+              ...a,
+              status: "closed" as const,
+              arrivalSec,
+              clearanceResult: result,
+              timeline: pushTimeline(
+                pushTimeline(a, { action: `到场处置（${arrivalSec}秒）`, tone: "info", by: handlerName }, state.clock),
+                { action: `清场完成·${CLEARANCE_META[result]}`, tone: "ok", by: handlerName },
+                state.clock,
+              ),
+            }
+          : a,
       );
-      const areas = recomputeAreas(alerts);
+      const areas = recomputeAreas(alerts, state.strategies, now);
       const handover = recomputeHandover(alerts, state.clock, state.handover.signedBy);
       return {
         alerts,
@@ -329,7 +385,7 @@ export const useOpsStore = create<OpsState>((set, get) => ({
         const level = reevaluateLevel(a.durationSec, threshold);
         return { ...a, level };
       });
-      const areas = recomputeAreas(alerts);
+      const areas = recomputeAreas(alerts, state.strategies, now);
       const handover = recomputeHandover(alerts, state.clock, state.handover.signedBy);
       return { alerts, areas, handover };
     }),
@@ -350,7 +406,7 @@ export const useOpsStore = create<OpsState>((set, get) => ({
         const level = reevaluateLevel(a.durationSec, threshold);
         return { ...a, level };
       });
-      const areas = recomputeAreas(alerts);
+      const areas = recomputeAreas(alerts, strategies, now);
       const handover = recomputeHandover(alerts, state.clock, state.handover.signedBy);
       return { strategies, alerts, areas, handover };
     }),
@@ -362,22 +418,25 @@ export const useOpsStore = create<OpsState>((set, get) => ({
       ),
     })),
 
-  signHandover: (name) =>
-    set((state) => ({
-      handover: {
-        ...state.handover,
-        signedBy: state.handover.signedBy.includes(name)
-          ? state.handover.signedBy
-          : [...state.handover.signedBy, name],
-      },
-    })),
+  signHandover: (name) => {
+    const state = get();
+    const now = new Date();
+    const signedBy = state.handover.signedBy.includes(name)
+      ? state.handover.signedBy
+      : [...state.handover.signedBy, name];
+    set({
+      handover: { ...recomputeHandover(state.alerts, formatClock(now), signedBy), signedBy },
+    });
+  },
 
   addAlert: (seed) => {
     const s = seed ?? ALERT_SEEDS[Math.floor(Math.random() * ALERT_SEEDS.length)];
     alertSeq += 1;
     const id = `AL-2506-${String(alertSeq).padStart(3, "0")}`;
-    const strat = get().strategies.find((st) => st.areaId === s.areaId);
-    const threshold = strat ? effectiveThreshold(strat, new Date()) : 300;
+    const state0 = get();
+    const strat = state0.strategies.find((st) => st.areaId === s.areaId);
+    const now = new Date();
+    const threshold = strat ? effectiveThreshold(strat, now) : 300;
     const durationSec = threshold + Math.floor(Math.random() * 240);
     const level = reevaluateLevel(durationSec, threshold);
     const newAlert: Alert = {
@@ -387,13 +446,14 @@ export const useOpsStore = create<OpsState>((set, get) => ({
       level,
       status: "pending" as const,
       durationSec,
-      triggeredAt: `2026-06-17 ${get().clock.slice(0, 5)}`,
+      triggeredAt: `2026-06-17 ${state0.clock.slice(0, 5)}`,
       isRecurrent: Math.random() > 0.8,
       description: s.description,
+      timeline: [{ at: `2026-06-17 ${state0.clock.slice(0, 5)}`, action: `告警触发·${s.areaName}`, tone: "crit" }],
     };
     set((state) => {
       const alerts: Alert[] = [newAlert, ...state.alerts].slice(0, 24);
-      const areas = recomputeAreas(alerts);
+      const areas = recomputeAreas(alerts, state.strategies, now);
       const handover = recomputeHandover(alerts, state.clock, state.handover.signedBy);
       return { alerts, areas, handover };
     });
@@ -425,7 +485,7 @@ export const useOpsStore = create<OpsState>((set, get) => ({
       const ny = Math.max(8, Math.min(92, p.y + (Math.random() - 0.5) * 4));
       return { ...p, x: Math.round(nx), y: Math.round(ny) };
     });
-    const areas = recomputeAreas(alerts);
+    const areas = recomputeAreas(alerts, state.strategies, now);
     const handover = recomputeHandover(alerts, formatClock(now), state.handover.signedBy);
     set({ clock: formatClock(now), tickCount: next, alerts, patrol, areas, handover });
     if (next % 22 === 0 && state.alerts.length < 20) {

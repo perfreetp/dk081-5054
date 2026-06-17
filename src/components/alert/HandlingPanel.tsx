@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Ban, CheckCircle2, Crosshair, Eye, Flame, Send } from "lucide-react";
 import type { Alert, ClearanceResult } from "@/types";
 import { useOpsStore, dist } from "@/store/useOpsStore";
-import { CLEARANCE_META, LEVEL_META, STATUS_META, formatDuration } from "@/lib/meta";
+import { LEVEL_META, STATUS_META, formatDuration } from "@/lib/meta";
 import { cn } from "@/lib/utils";
 import { Tag } from "@/components/ui/Bits";
 
@@ -25,22 +25,15 @@ export function HandlingPanel({ alert }: { alert: Alert }) {
     .slice(0, 3);
   const closed = alert.status === "closed" || alert.status === "falseAlarm";
 
-  const timeline: { label: string; sub?: string; tone: string }[] = [
-    { label: "告警触发", sub: alert.triggeredAt.slice(-5), tone: "text-crit" },
-  ];
-  if (alert.mark === "false") timeline.push({ label: "标记误报", tone: "text-ink-dim" });
-  if (alert.mark === "watch") timeline.push({ label: "标记关注", tone: "text-focus" });
-  if (alert.mark === "escalate") timeline.push({ label: "升级处置", tone: "text-crit" });
-  if (alert.handlerName)
-    timeline.push({ label: `分派 ${alert.handlerName}`, tone: "text-amber" });
-  if (alert.arrivalSec)
-    timeline.push({ label: "到场处置", sub: `${alert.arrivalSec}s`, tone: "text-info" });
-  if (alert.clearanceResult)
-    timeline.push({
-      label: "清场完成",
-      sub: CLEARANCE_META[alert.clearanceResult],
-      tone: "text-ok",
-    });
+  const TONE_TEXT: Record<string, string> = {
+    crit: "text-crit",
+    amber: "text-amber",
+    info: "text-info",
+    ok: "text-ok",
+    focus: "text-focus",
+    mute: "text-ink-mute",
+  };
+  const timeline = alert.timeline ?? [];
 
   return (
     <div className="flex h-full flex-col">
@@ -159,19 +152,32 @@ export function HandlingPanel({ alert }: { alert: Alert }) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-3">
-        <div className="mb-2 text-[11px] uppercase tracking-wider text-ink-mute">处置时间线</div>
-        <div className="relative space-y-3 pl-4">
-          <span className="absolute left-1 top-1 bottom-1 w-px bg-line" />
-          {timeline.map((t, i) => (
-            <div key={i} className="relative">
-              <span className={cn("absolute -left-3 top-1 h-2 w-2 rounded-full bg-current", t.tone)} />
-              <div className="flex items-center justify-between">
-                <span className="text-[12px] text-ink">{t.label}</span>
-                {t.sub && <span className="font-mono text-[10px] text-ink-mute">{t.sub}</span>}
-              </div>
-            </div>
-          ))}
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-[11px] uppercase tracking-wider text-ink-mute">处置时间线</span>
+          <span className="font-mono text-[10px] text-ink-mute">{timeline.length} 步</span>
         </div>
+        {timeline.length ? (
+          <div className="relative space-y-3 pl-4">
+            <span className="absolute left-1 top-1 bottom-1 w-px bg-line" />
+            {timeline.map((t, i) => {
+              const tone = TONE_TEXT[t.tone ?? "mute"] ?? "text-ink-mute";
+              return (
+                <div key={i} className="relative">
+                  <span className={cn("absolute -left-3 top-1 h-2 w-2 rounded-full bg-current", tone)} />
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[12px] text-ink">{t.action}</span>
+                    <span className="font-mono text-[10px] text-ink-mute shrink-0">{t.at.slice(-5)}</span>
+                  </div>
+                  {t.by && (
+                    <div className="mt-0.5 text-[10px] text-ink-mute">操作人 · {t.by}</div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="py-6 text-center text-[11px] text-ink-mute">暂无处置记录</div>
+        )}
       </div>
     </div>
   );

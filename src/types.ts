@@ -22,6 +22,13 @@ export type AlertMark = "false" | "watch" | "escalate";
 
 export type ClearanceResult = "cleared" | "moved" | "relocated" | "unresolved";
 
+export interface TimelineEntry {
+  at: string;
+  action: string;
+  tone?: "crit" | "amber" | "info" | "ok" | "focus" | "mute";
+  by?: string;
+}
+
 export type LinkageType = "access" | "broadcast" | "intercom";
 
 export type LinkageResult = "success" | "failed" | "pending";
@@ -71,6 +78,7 @@ export interface Alert {
   description: string;
   isRecurrent: boolean;
   mark?: AlertMark;
+  timeline: TimelineEntry[];
 }
 
 export interface PeakHour {
@@ -117,10 +125,12 @@ export interface Shift {
 export interface HandoverChecklist {
   shiftId: string;
   generatedAt: string;
+  newAlerts: number;
   handledAlerts: number;
   pendingItems: { id: string; area: string; desc: string }[];
   focusPersons: { name: string; count: number; areas: string[] }[];
   focusSlots: { slot: string; area: string; count: number }[];
+  focusAreas: { area: string; count: number }[];
   signedBy: string[];
 }
 

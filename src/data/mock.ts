@@ -30,18 +30,18 @@ export const PATROL: Personnel[] = [
 ];
 
 export const INITIAL_ALERTS: Alert[] = [
-  { id: "AL-2506-001", areaId: "A01", areaName: "门诊大厅", level: "critical", status: "pending", durationSec: 742, triggeredAt: "2026-06-17 09:18", isRecurrent: true, description: "大厅中部人员持续徘徊12分钟，多次往返取号区未就诊" },
-  { id: "AL-2506-002", areaId: "A05", areaName: "收费窗口", level: "critical", status: "dispatched", durationSec: 612, triggeredAt: "2026-06-17 09:25", handlerId: "P03", handlerName: "李强", isRecurrent: false, description: "5号窗口前人员滞留，疑似插队纠纷" },
-  { id: "AL-2506-003", areaId: "A04", areaName: "药房取药区", level: "high", status: "pending", durationSec: 528, triggeredAt: "2026-06-17 09:31", isRecurrent: false, description: "取药等候区人员静止站立超8分钟" },
-  { id: "AL-2506-004", areaId: "A02", areaName: "急诊入口", level: "medium", status: "watch", durationSec: 395, triggeredAt: "2026-06-17 09:02", isRecurrent: true, mark: "watch", description: "急诊入口外人员反复逗留，已标记关注" },
-  { id: "AL-2506-005", areaId: "A06", areaName: "自助机区", level: "low", status: "pending", durationSec: 244, triggeredAt: "2026-06-17 09:40", isRecurrent: false, description: "自助机区域人员操作超时停留" },
-  { id: "AL-2506-006", areaId: "A05", areaName: "收费窗口", level: "high", status: "handling", durationSec: 488, triggeredAt: "2026-06-17 08:55", handlerId: "P01", handlerName: "张磊", arrivalSec: 142, isRecurrent: false, description: "3号窗口人员长时间逗留，巡逻已到场处置" },
-  { id: "AL-2506-007", areaId: "A01", areaName: "门诊大厅", level: "medium", status: "closed", durationSec: 366, triggeredAt: "2026-06-17 08:30", handlerId: "P05", handlerName: "孙浩", arrivalSec: 188, clearanceResult: "cleared", isRecurrent: false, description: "大厅东侧人员滞留，已劝导离开" },
-  { id: "AL-2506-008", areaId: "A04", areaName: "药房取药区", level: "low", status: "falseAlarm", durationSec: 210, triggeredAt: "2026-06-17 08:12", isRecurrent: false, mark: "false", description: "候诊高峰误报，实为排队取药" },
-  { id: "AL-2506-009", areaId: "A03", areaName: "ICU外走廊", level: "high", status: "closed", durationSec: 540, triggeredAt: "2026-06-17 07:48", handlerId: "P02", handlerName: "王芳", arrivalSec: 95, clearanceResult: "relocated", isRecurrent: true, description: "ICU外走廊探视者超时停留，已引导至家属等候区" },
-  { id: "AL-2506-010", areaId: "A02", areaName: "急诊入口", level: "medium", status: "closed", durationSec: 422, triggeredAt: "2026-06-17 07:20", handlerId: "P03", handlerName: "李强", arrivalSec: 120, clearanceResult: "moved", isRecurrent: false, description: "急诊入口人员滞留，已引导至候诊区" },
-  { id: "AL-2506-011", areaId: "A06", areaName: "自助机区", level: "low", status: "closed", durationSec: 188, triggeredAt: "2026-06-17 06:55", handlerId: "P05", handlerName: "孙浩", arrivalSec: 210, clearanceResult: "unresolved", isRecurrent: false, description: "自助机故障导致人员滞留，转报后勤" },
-  { id: "AL-2506-012", areaId: "A01", areaName: "门诊大厅", level: "critical", status: "closed", durationSec: 690, triggeredAt: "2026-06-17 06:30", handlerId: "P01", handlerName: "张磊", arrivalSec: 132, clearanceResult: "cleared", isRecurrent: true, description: "大厅入口可疑人员长时间逗留，已核验清场" },
+  { id: "AL-2506-001", areaId: "A01", areaName: "门诊大厅", level: "critical", status: "pending", durationSec: 742, triggeredAt: "2026-06-17 09:18", isRecurrent: true, description: "大厅中部人员持续徘徊12分钟，多次往返取号区未就诊", timeline: [{ at: "2026-06-17 09:18", action: "告警触发·门诊大厅", tone: "crit" }, { at: "2026-06-17 09:20", action: "触发定向广播提醒", tone: "amber" }] },
+  { id: "AL-2506-002", areaId: "A05", areaName: "收费窗口", level: "critical", status: "dispatched", durationSec: 612, triggeredAt: "2026-06-17 09:25", handlerId: "P03", handlerName: "李强", isRecurrent: false, description: "5号窗口前人员滞留，疑似插队纠纷", timeline: [{ at: "2026-06-17 09:25", action: "告警触发·收费窗口", tone: "crit" }, { at: "2026-06-17 09:26", action: "对讲呼叫巡逻岗·李强（急诊驻点）", tone: "amber", by: "系统" }, { at: "2026-06-17 09:26", action: "分派李强前往处置", tone: "amber" }] },
+  { id: "AL-2506-003", areaId: "A04", areaName: "药房取药区", level: "high", status: "pending", durationSec: 528, triggeredAt: "2026-06-17 09:31", isRecurrent: false, description: "取药等候区人员静止站立超8分钟", timeline: [{ at: "2026-06-17 09:31", action: "告警触发·药房取药区", tone: "crit" }, { at: "2026-06-17 09:32", action: "对讲呼叫药房窗口工作人员协助核验", tone: "info" }] },
+  { id: "AL-2506-004", areaId: "A02", areaName: "急诊入口", level: "medium", status: "watch", durationSec: 395, triggeredAt: "2026-06-17 09:02", isRecurrent: true, mark: "watch", description: "急诊入口外人员反复逗留，已标记关注", timeline: [{ at: "2026-06-17 09:02", action: "告警触发·急诊入口", tone: "crit" }, { at: "2026-06-17 09:05", action: "对讲呼叫巡逻岗·李强（最近岗）", tone: "amber" }, { at: "2026-06-17 09:10", action: "标记关注·反复出现人员", tone: "focus" }] },
+  { id: "AL-2506-005", areaId: "A06", areaName: "自助机区", level: "low", status: "pending", durationSec: 244, triggeredAt: "2026-06-17 09:40", isRecurrent: false, description: "自助机区域人员操作超时停留", timeline: [{ at: "2026-06-17 09:40", action: "告警触发·自助机区", tone: "crit" }] },
+  { id: "AL-2506-006", areaId: "A05", areaName: "收费窗口", level: "high", status: "handling", durationSec: 488, triggeredAt: "2026-06-17 08:55", handlerId: "P01", handlerName: "张磊", arrivalSec: 142, isRecurrent: false, description: "3号窗口人员长时间逗留，巡逻已到场处置", timeline: [{ at: "2026-06-17 08:55", action: "告警触发·收费窗口", tone: "crit" }, { at: "2026-06-17 08:56", action: "对讲呼叫巡逻岗·张磊", tone: "amber" }, { at: "2026-06-17 08:57", action: "张磊到场处置（142秒）", tone: "info", by: "张磊" }] },
+  { id: "AL-2506-007", areaId: "A01", areaName: "门诊大厅", level: "medium", status: "closed", durationSec: 366, triggeredAt: "2026-06-17 08:30", handlerId: "P05", handlerName: "孙浩", arrivalSec: 188, clearanceResult: "cleared", isRecurrent: false, description: "大厅东侧人员滞留，已劝导离开", timeline: [{ at: "2026-06-17 08:30", action: "告警触发·门诊大厅", tone: "crit" }, { at: "2026-06-17 08:33", action: "分派孙浩前往处置", tone: "amber" }, { at: "2026-06-17 08:33", action: "孙浩到场处置（188秒）", tone: "info" }, { at: "2026-06-17 08:36", action: "清场完成·已清场", tone: "ok", by: "孙浩" }] },
+  { id: "AL-2506-008", areaId: "A04", areaName: "药房取药区", level: "low", status: "falseAlarm", durationSec: 210, triggeredAt: "2026-06-17 08:12", isRecurrent: false, mark: "false", description: "候诊高峰误报，实为排队取药", timeline: [{ at: "2026-06-17 08:12", action: "告警触发·药房取药区", tone: "crit" }, { at: "2026-06-17 08:15", action: "标记误报·候诊高峰", tone: "mute" }] },
+  { id: "AL-2506-009", areaId: "A03", areaName: "ICU外走廊", level: "high", status: "closed", durationSec: 540, triggeredAt: "2026-06-17 07:48", handlerId: "P02", handlerName: "王芳", arrivalSec: 95, clearanceResult: "relocated", isRecurrent: true, description: "ICU外走廊探视者超时停留，已引导至家属等候区", timeline: [{ at: "2026-06-17 07:48", action: "告警触发·ICU外走廊", tone: "crit" }, { at: "2026-06-17 07:49", action: "对讲呼叫护士站协同劝导", tone: "info" }, { at: "2026-06-17 07:52", action: "ICU探视通道门禁临时降权", tone: "amber" }, { at: "2026-06-17 07:50", action: "王芳到场处置（95秒）", tone: "info" }, { at: "2026-06-17 07:55", action: "清场完成·已转移等候区", tone: "ok", by: "王芳" }] },
+  { id: "AL-2506-010", areaId: "A02", areaName: "急诊入口", level: "medium", status: "closed", durationSec: 422, triggeredAt: "2026-06-17 07:20", handlerId: "P03", handlerName: "李强", arrivalSec: 120, clearanceResult: "moved", isRecurrent: false, description: "急诊入口人员滞留，已引导至候诊区", timeline: [{ at: "2026-06-17 07:20", action: "告警触发·急诊入口", tone: "crit" }, { at: "2026-06-17 07:22", action: "李强到场处置（120秒）", tone: "info" }, { at: "2026-06-17 07:27", action: "清场完成·已引导离开", tone: "ok", by: "李强" }] },
+  { id: "AL-2506-011", areaId: "A06", areaName: "自助机区", level: "low", status: "closed", durationSec: 188, triggeredAt: "2026-06-17 06:55", handlerId: "P05", handlerName: "孙浩", arrivalSec: 210, clearanceResult: "unresolved", isRecurrent: false, description: "自助机故障导致人员滞留，转报后勤", timeline: [{ at: "2026-06-17 06:55", action: "告警触发·自助机区", tone: "crit" }, { at: "2026-06-17 06:58", action: "广播引导至人工窗口", tone: "amber" }, { at: "2026-06-17 06:59", action: "孙浩到场处置（210秒）", tone: "info" }, { at: "2026-06-17 07:02", action: "清场完成·未解决转报", tone: "mute", by: "孙浩" }] },
+  { id: "AL-2506-012", areaId: "A01", areaName: "门诊大厅", level: "critical", status: "closed", durationSec: 690, triggeredAt: "2026-06-17 06:30", handlerId: "P01", handlerName: "张磊", arrivalSec: 132, clearanceResult: "cleared", isRecurrent: true, description: "大厅入口可疑人员长时间逗留，已核验清场", timeline: [{ at: "2026-06-17 06:30", action: "告警触发·门诊大厅", tone: "crit" }, { at: "2026-06-17 06:32", action: "大厅侧门门禁临时开启便于引导", tone: "amber" }, { at: "2026-06-17 06:32", action: "张磊到场处置（132秒）", tone: "info" }, { at: "2026-06-17 06:38", action: "清场完成·已清场", tone: "ok", by: "张磊" }] },
 ];
 
 export const STRATEGIES: AreaStrategy[] = [
@@ -102,6 +102,7 @@ export const SHIFTS: Shift[] = buildShifts();
 export const HANDOVER: HandoverChecklist = {
   shiftId: "S-2026-06-17-D",
   generatedAt: "2026-06-17 11:32",
+  newAlerts: 12,
   handledAlerts: 8,
   pendingItems: [
     { id: "PI-1", area: "收费窗口", desc: "AL-2506-002 处置中，待李强反馈清场结果" },
@@ -117,6 +118,11 @@ export const HANDOVER: HandoverChecklist = {
     { slot: "07:30-08:30", area: "急诊入口", count: 5 },
     { slot: "09:00-10:00", area: "收费窗口", count: 6 },
     { slot: "14:30-15:30", area: "药房取药区", count: 4 },
+  ],
+  focusAreas: [
+    { area: "门诊大厅", count: 4 },
+    { area: "收费窗口", count: 3 },
+    { area: "急诊入口", count: 3 },
   ],
   signedBy: ["赵敏"],
 };
