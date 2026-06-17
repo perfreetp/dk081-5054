@@ -74,6 +74,13 @@ export function StrategySandbox() {
     });
   }, [sandboxActive, strategies, alerts, sandboxDate, effOpts, forceNight]);
 
+  const resetSandbox = () => {
+    setForceNight(false);
+    setForceHoliday(false);
+    setHour(new Date().getHours());
+    setSandboxActive(false);
+  };
+
   const applySandbox = () => {
     if (!sandboxActive) return;
     for (const p of previews) {
@@ -88,7 +95,7 @@ export function StrategySandbox() {
         });
       }
     }
-    setSandboxActive(false);
+    resetSandbox();
   };
 
   return (
@@ -164,7 +171,7 @@ export function StrategySandbox() {
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setSandboxActive(false)}
+              onClick={resetSandbox}
               className="flex flex-1 items-center justify-center gap-1 rounded border border-line py-1.5 text-[11px] text-ink-dim hover:bg-white/5"
             >
               <RotateCcw className="h-3 w-3" /> 还原

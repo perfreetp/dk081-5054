@@ -18,9 +18,11 @@ export function HandoverDrill({ drill }: { drill: DrillKey }) {
   const navigate = useNavigate();
   const alerts = useOpsStore((s) => s.alerts);
   const selectAlert = useOpsStore((s) => s.selectAlert);
+  const focusAreas = useOpsStore((s) => s.handover.focusAreas);
 
   const list = useMemo(() => {
     if (!drill) return [];
+    const focusAreaNames = focusAreas.map((f) => f.area);
     switch (drill.kind) {
       case "newAlerts":
         return alerts.filter((a) => a.triggeredAt.startsWith("2026-06-17"));
@@ -31,13 +33,14 @@ export function HandoverDrill({ drill }: { drill: DrillKey }) {
       case "persons":
         return alerts.filter((a) => a.isRecurrent);
       case "areas":
-        return drill.area
-          ? alerts.filter((a) => a.areaName === drill.area)
-          : alerts.filter((a) => a.status !== "falseAlarm");
+        if (drill.area) {
+          return alerts.filter((a) => a.areaName === drill.area && a.status !== "falseAlarm");
+        }
+        return alerts.filter((a) => focusAreaNames.includes(a.areaName) && a.status !== "falseAlarm");
       default:
         return [];
     }
-  }, [drill, alerts]);
+  }, [drill, alerts, focusAreas]);
 
   if (!drill) {
     return (

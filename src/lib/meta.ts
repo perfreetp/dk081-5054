@@ -35,11 +35,11 @@ export const STATUS_META: Record<AlertStatus, { label: string; text: string; bg:
 
 export const AREA_STATUS_META: Record<
   AreaStatus,
-  { label: string; text: string; dot: string; border: string }
+  { label: string; text: string; dot: string; border: string; bg: string }
 > = {
-  normal: { label: "正常", text: "text-ok", dot: "bg-ok", border: "border-ok/30" },
-  warning: { label: "预警", text: "text-amber", dot: "bg-amber", border: "border-amber/40" },
-  critical: { label: "告警", text: "text-crit", dot: "bg-crit", border: "border-crit/50" },
+  normal: { label: "正常", text: "text-ok", dot: "bg-ok", border: "border-ok/30", bg: "bg-ok/12" },
+  warning: { label: "预警", text: "text-amber", dot: "bg-amber", border: "border-amber/40", bg: "bg-amber/12" },
+  critical: { label: "告警", text: "text-crit", dot: "bg-crit", border: "border-crit/50", bg: "bg-crit/12" },
 };
 
 export const LINKAGE_META: Record<LinkageType, { label: string; text: string; bg: string }> = {

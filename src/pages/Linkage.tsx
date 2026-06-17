@@ -161,7 +161,8 @@ export default function Linkage() {
         const linkagesFor = linkages.filter((l) => l.sourceAlertId === id);
         const filteredLinkages =
           filter === "all" ? linkagesFor : linkagesFor.filter((l) => l.type === filter);
-        if (!alert && filteredLinkages.length === 0) return null;
+        if (filter !== "all" && filteredLinkages.length === 0) return null;
+        if (filter === "all" && !alert && linkagesFor.length === 0) return null;
         const nodes = buildChain(id, alerts, linkages).filter((n) => {
           if (filter === "all") return true;
           if (n.kind !== "linkage") return true;
